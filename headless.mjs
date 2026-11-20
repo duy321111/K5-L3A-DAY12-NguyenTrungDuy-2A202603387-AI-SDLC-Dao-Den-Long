@@ -32,8 +32,9 @@ function scenarioValid(scenario, night) {
     && Number(id.slice(1)) <= nights[night].lanterns.length;
   return object(scenario)
     && optional(scenario.player, player => object(player) && optional(player.pos, position)
-
-      && optional(player.carried, value => integer(value) && value <= t.carry_capacity)
+      && optional(player.successful_lights, integer)
+      && optional(player.carried, value => integer(value)
+        && value <= Math.min(t.capacity_max, t.carry_capacity + 2 * (player.successful_lights ?? 0)))
       && optional(player.flames, integer)
       && ['invuln_ticks', 'dash_cd_ticks', 'pulse_cd_ticks', 'charm_ticks'].every(key => optional(player[key], integer)))
     && optional(scenario.time_left_s, time => Number.isFinite(time) && time >= 0)
@@ -44,6 +45,7 @@ function scenarioValid(scenario, night) {
     && optional(scenario.shades, shades => arrayOf(shades, shade => object(shade) && position(shade.pos)
       && optional(shade.id, id => typeof id === 'string' && id.length > 0)
       && optional(shade.state, state => shadeStates.includes(state))
+      && optional(shade.target_lantern_id, lanternId)
       && optional(shade.state_ticks_left, integer))
       && new Set(shades.filter(shade => shade.id !== undefined).map(shade => shade.id)).size
         === shades.filter(shade => shade.id !== undefined).length)
@@ -59,6 +61,8 @@ function scenarioValid(scenario, night) {
       && lanternId(lantern.id)
       && optional(lantern.pos, position)
       && optional(lantern.lit, boolean)
+      && optional(lantern.ever_lit, boolean)
+      && optional(lantern.fuel, fuel => Number.isFinite(fuel) && fuel >= 0 && fuel <= t.fuel_max)
       && optional(lantern.deposited, value => integer(value) && value <= t.lantern_cost))
       && new Set(lanterns.map(lantern => lantern.id)).size === lanterns.length);
 }

@@ -223,13 +223,33 @@ function lampModel(group, lamp) {
 
 const tornPaper = new T.MeshBasicMaterial({ color: 0x20171d, side: T.DoubleSide });
 
-
-function updateLamp(model, lamp) {
-  model.lantern.material = lamp.lit ? amber : dormant;
-  model.light.intensity = lamp.lit ? 24 : 0;
-  model.tear.visible = false;
-  model.core.visible = lamp.lit;
-  model.gauge.visible = false;
+function updateLamp(model, lamp, game, reduced, accessible) {
+  const low = game.isWeak(lamp);
+  const blink = low && !reduced && game.simTick % 60 >= 30;
+  model.lantern.material = lamp.lit && !blink ? amber : dormant;
+  model.lantern.scale.y = lamp.lit ? 1 : 0.8;
+  model.lantern.position.y = lamp.lit ? 2.79 : 2.718;
+  model.lid.position.y = lamp.lit ? 3.28 : 3.136;
+  model.tear.visible = !lamp.lit;
+  model.core.visible = lamp.lit && !blink;
+  model.light.intensity = lamp.lit ? blink ? 5 : 24 : 0;
+  model.gauge.visible = lamp.lit;
+  if (!lamp.lit) return;
+  model.gauge.material.opacity = blink ? 0.38 : 1;
+  const fuel = Math.floor(lamp.fuelUnits / 60);
+  const key = fuel + '/' + low + '/' + accessible;
+  if (key === model.gaugeKey) return;
+  const brush = model.brush;
+  brush.clearRect(0,0,192,48);
+  brush.fillStyle = '#211d28ee';
+  brush.fillRect(0,0,192,48);
+  brush.fillStyle = low ? accessible ? '#ffffff' : '#ff5a5f' : '#ffcc7a';
+  brush.fillRect(10,29,172 * fuel / game.tuning.fuel_max,10);
+  brush.font = '600 21px system-ui';
+  brush.textAlign = 'center';
+  brush.fillText((low && accessible ? '⚠ ' : '') + lamp.id + ' · ' + fuel, 96, 23);
+  model.texture.needsUpdate = true;
+  model.gaugeKey = key;
 }
 
 function ocean(scene) {

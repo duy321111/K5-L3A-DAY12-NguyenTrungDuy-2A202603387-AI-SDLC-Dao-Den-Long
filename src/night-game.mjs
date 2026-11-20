@@ -1,7 +1,7 @@
 import { defaultInput, HZ } from './game.mjs';
 import { nights } from './nights.mjs';
 
-export const shadeStates = ['spawning', 'wander', 'chase', 'recoil', 'stunned'];
+export const shadeStates = ['spawning', 'wander', 'chase', 'recoil', 'stunned', 'drain'];
 export const drifterStates = ['idle', 'chase', 'flee', 'removed'];
 const gap = (a, b) => Math.hypot(a[0] - b[0], a[2] - b[2]);
 const byId = (a, b) => a.id.localeCompare(b.id, 'en', { numeric: true });
@@ -50,6 +50,7 @@ export class NightGame {
     this.randomDrifters = scenario.random_drifters !== false && night > 1;
 
     const player = scenario.player ?? {};
+    this.successfulLights = player.successful_lights ?? 0;
     this.player = {
       pos: [...(player.pos ?? layout.spawn ?? [0, 0, 0])], vel: [0, 0, 0], carried: player.carried ?? 0,
       flames: player.flames ?? tuning.flames, invuln: player.invuln_ticks ?? 0,
@@ -59,9 +60,11 @@ export class NightGame {
     this.lanterns = this.layout.lanterns.map((pos, index) => {
       const id = 'L' + (index + 1);
       const override = scenario.lanterns?.find(item => item.id === id);
-
-      const deposited = override?.deposited ?? (override?.lit ? tuning.lantern_cost : 0);
-      return { id, pos: [...(override?.pos ?? pos)], deposited, lit: override?.lit ?? deposited >= tuning.lantern_cost };
+      const needed = override?.ever_lit && !override?.lit ? tuning.relight_cost : tuning.lantern_cost;
+      const deposited = override?.deposited ?? (override?.lit ? needed : 0);
+      const lit = override?.lit ?? deposited >= needed;
+      return { id, pos: [...(override?.pos ?? pos)], deposited, lit, ever_lit: lit || Boolean(override?.ever_lit),
+        relit_count: 0, fuelUnits: lit ? ticks(override?.fuel ?? tuning.fuel_max) : 0 };
     });
 
     const points = [...this.layout.motePoints];
@@ -84,6 +87,7 @@ export class NightGame {
     this.shades = shades.map(shade => ({
       id: shade.id ?? this.nextShade(), pos: [...shade.pos],
       state: shade.state ?? 'chase', timer: shade.state_ticks_left ?? 0,
+      target: shade.target_lantern_id, drainTicks: 0,
     }));
     this.drifters = drifters.map(drifter => ({
       id: drifter.id ?? this.nextDrifter(), pos: [...drifter.pos], state: drifter.state ?? 'idle',
@@ -104,15 +108,49 @@ export class NightGame {
     return Math.max(0, this.duration - seconds(this.simTick));
   }
 
+  get capacity() {
+    return Math.min(this.tuning.capacity_max, this.tuning.carry_capacity + 2 * this.successfulLights);
+  }
 
-  get capacity() { return this.tuning.carry_capacity; }
+  cost(lamp) {
+    return lamp.ever_lit ? this.tuning.relight_cost : this.tuning.lantern_cost;
+  }
 
-  cost() { return this.tuning.lantern_cost; }
+  isWeak(lamp) {
+    return lamp.lit && lamp.fuelUnits < ticks(this.tuning.low_fuel_threshold);
+  }
 
-  isWeak() { return false; }
+  fuel(lamp) {
+    return Number(seconds(lamp.fuelUnits).toFixed(1));
+  }
 
   nearestLamp(pos, predicate) {
     return this.lanterns.filter(predicate).sort((a, b) => gap(a.pos, pos) - gap(b.pos, pos) || byId(a, b))[0];
+  }
+
+  burnFuel(emit) {
+    const draining = new Map();
+    for (const shade of this.shades) {
+      if (shade.state !== 'drain') continue;
+      const lamp = shade.target ? this.lanterns.find(item => item.id === shade.target)
+        : this.nearestLamp(shade.pos, item => this.isWeak(item));
+      if (!lamp || !this.isWeak(lamp) || gap(lamp.pos, shade.pos) > 2) continue;
+      shade.target = lamp.id;
+      if (!draining.has(lamp)) draining.set(lamp, []);
+      draining.get(lamp).push(shade);
+    }
+    for (const lamp of this.lanterns) {
+      if (!lamp.lit) continue;
+      const shades = draining.get(lamp) ?? [];
+      lamp.fuelUnits = Math.max(0, lamp.fuelUnits - this.tuning.fuel_decay_per_s - shades.length * this.tuning.drain_per_s);
+      for (const shade of shades) {
+        if (++shade.drainTicks % HZ === 0) emit('fuel_drain', { lantern_id: lamp.id, shade_id: shade.id, fuel: this.fuel(lamp) });
+      }
+      if (lamp.fuelUnits > 0) continue;
+      lamp.lit = false;
+      lamp.deposited = 0;
+      emit('lantern_out', { lantern_id: lamp.id });
+    }
   }
 
   repel(lamp) {
@@ -273,7 +311,7 @@ export class NightGame {
 
   interactable() {
     const pos = this.player.pos;
-    return this.lanterns.filter(item => !item.lit
+    return this.lanterns.filter(item => (!item.lit || item.fuelUnits < ticks(this.tuning.fuel_max))
       && gap(item.pos, pos) <= this.tuning.interact_radius
       && (this.night !== 3 || Math.abs(item.pos[1] - pos[1]) < 2))
       .sort((a, b) => gap(a.pos, pos) - gap(b.pos, pos) || byId(a, b))[0];
@@ -283,18 +321,35 @@ export class NightGame {
     const lamp = this.interactable();
     const t = this.tuning;
     if (!lamp) return;
-
-    const amount = Math.min(this.player.carried, t.lantern_cost - lamp.deposited);
+    const maximum = ticks(t.fuel_max);
+    if (lamp.lit) {
+      const amount = Math.min(this.player.carried, Math.ceil((maximum - lamp.fuelUnits) / ticks(t.fuel_per_mote)));
+      if (!amount) return;
+      const weak = this.isWeak(lamp);
+      lamp.fuelUnits = Math.min(maximum, lamp.fuelUnits + ticks(t.fuel_per_mote) * amount);
+      this.player.carried -= amount;
+      this.score += amount * t.score.per_mote;
+      if (weak && !this.isWeak(lamp)) this.repel(lamp);
+      emit('refuel', { lantern_id: lamp.id, amount, fuel: this.fuel(lamp) });
+      return;
+    }
+    const needed = this.cost(lamp);
+    const amount = Math.min(this.player.carried, needed - lamp.deposited);
     if (amount <= 0) return;
     this.player.carried -= amount;
     lamp.deposited += amount;
     this.score += amount * t.score.per_mote;
     emit('deposit', { lantern_id: lamp.id, amount, deposited: lamp.deposited });
-    if (lamp.deposited === t.lantern_cost) {
+    if (lamp.deposited === needed) {
+      const relight = lamp.ever_lit;
       lamp.lit = true;
-      this.score += t.score.per_lantern;
+      lamp.ever_lit = true;
+      lamp.fuelUnits = maximum;
+      if (relight) lamp.relit_count++;
+      this.successfulLights++;
+      this.score += relight ? t.score.per_relight : t.score.per_lantern;
       this.repel(lamp);
-      emit('lantern_lit', { lantern_id: lamp.id });
+      emit('lantern_lit', { lantern_id: lamp.id, relight });
     }
   }
 
@@ -324,7 +379,7 @@ export class NightGame {
       const dx = shade.pos[0] - p.pos[0];
       const dz = shade.pos[2] - p.pos[2];
       if (Math.hypot(dx, shade.pos[1] - p.pos[1] - 0.8, dz) > t.pulse_radius) continue;
-      this.score += t.score.per_stun;
+      this.score += shade.state === 'drain' ? t.score.per_drain_stun : t.score.per_stun;
       const [ux, uz] = unit(dx, dz);
       shade.force = { dx: ux * t.pulse_push_m / 15, dz: uz * t.pulse_push_m / 15, remaining: 15 };
       shade.state = 'stunned';
@@ -385,17 +440,27 @@ export class NightGame {
         continue;
       }
       if (shade.recoveredAt === this.simTick) continue;
+      if (shade.state === 'drain') {
+        const lamp = this.lanterns.find(item => item.id === shade.target);
+        if (!this.respawnAt && gap(shade.pos, p.pos) <= 6) shade.state = 'chase';
+        else if (!lamp || !this.isWeak(lamp) || gap(shade.pos, lamp.pos) > 2) shade.state = 'wander';
+        else continue;
+        shade.target = undefined;
+        shade.drainTicks = 0;
+        continue;
+      }
       if (shade.state !== 'chase' && shade.state !== 'wander') continue;
+      const weak = shade.state === 'wander' ? this.nearestLamp(shade.pos, lamp => this.isWeak(lamp)) : undefined;
       const distanceToPlayer = gap(shade.pos, p.pos);
       if (shade.state === 'chase' && (distanceToPlayer > 18 || this.respawnAt)) shade.state = 'wander';
-      if (allowChase && !this.respawnAt && shade.state === 'wander' && distanceToPlayer <= 12) shade.state = 'chase';
+      if (allowChase && !this.respawnAt && shade.state === 'wander' && !weak && distanceToPlayer <= 12) shade.state = 'chase';
       for (const lamp of safe) {
         if (gap(lamp.pos, shade.pos) >= t.safe_radius) continue;
         const [dx, dz] = unit(shade.pos[0] - lamp.pos[0], shade.pos[2] - lamp.pos[2]);
         shade.pos[0] = lamp.pos[0] + dx * t.safe_radius;
         shade.pos[2] = lamp.pos[2] + dz * t.safe_radius;
       }
-      const lamp = shade.state === 'wander' ? this.nearestLamp(shade.pos, item => !item.lit) : undefined;
+      const lamp = shade.state === 'wander' ? weak ?? this.nearestLamp(shade.pos, item => !item.lit) : undefined;
       const target = shade.state === 'chase' ? p.pos : lamp?.pos;
       const [dx, dz] = target
         ? unit(target[0] - shade.pos[0], target[2] - shade.pos[2], [0, 0])
@@ -405,6 +470,11 @@ export class NightGame {
       const next = [shade.pos[0] + dx * pace, shade.pos[1], shade.pos[2] + dz * pace];
       if (this.layout.continuousTerrain) next[1] = this.layout.floors(next[0], next[2])[0] ?? next[1];
       if (safe.every(lamp => gap(lamp.pos, next) >= t.safe_radius)) shade.pos = next;
+      if (lamp && lamp === weak && gap(shade.pos, lamp.pos) <= 2) {
+        shade.state = 'drain';
+        shade.target = lamp.id;
+        shade.drainTicks = 0;
+      }
     }
     for (const drifter of this.drifters) {
       if (drifter.state === 'removed') continue;
@@ -495,6 +565,7 @@ export class NightGame {
     if (this.simTick === 0) emit('night_start', { night: this.night });
     this.simTick++;
     this.timers();
+    this.burnFuel(emit);
     if (this.respawnAt === this.simTick) {
       this.respawnAt = 0;
       this.player.pos = [...(this.layout.spawn ?? [0, 0, 0])];
@@ -515,14 +586,16 @@ export class NightGame {
     this.spawn(emit);
     let reason;
     if (!this.player.flames) reason = 'no_flames';
-
-    else if (this.lanterns.every(lamp => lamp.lit)) {
-      reason = 'all_lit';
-      this.score += Math.floor(this.timeLeft) * this.tuning.score.per_second_left
-        + this.player.flames * this.tuning.score.per_flame_left;
-    } else if (this.timeLeft === 0) reason = 'dawn';
+    else if (this.timeLeft === 0) {
+      const lit = this.lanterns.filter(lamp => lamp.lit);
+      reason = lit.length >= Math.ceil(this.tuning.win_ratio * this.lanterns.length) ? 'dawn_survived' : 'dawn';
+      if (reason === 'dawn_survived') {
+        this.score += lit.reduce((total, lamp) => total + this.tuning.score.per_lit_at_dawn
+          + Math.floor(seconds(lamp.fuelUnits)), 0) + this.player.flames * this.tuning.score.per_flame_left;
+      }
+    }
     if (reason) {
-      this.state = reason === 'all_lit' ? 'won' : 'lost';
+      this.state = reason === 'dawn_survived' ? 'won' : 'lost';
       emit('game_over', { result: this.state, reason });
     }
     return events;
@@ -534,9 +607,9 @@ export class NightGame {
       type: 'snapshot', tick: this.tick, sim_tick: this.simTick, night: this.night, state: this.state,
       time_left_s: this.timeLeft, score: this.score, wind: { ...this.wind },
       player: { pos: round(p.pos), vel: round(p.vel), grounded: p.grounded,
-        flames: p.flames, carried: p.carried, invuln: Boolean(p.invuln), dash_cd_s: seconds(p.dashCd),
+        flames: p.flames, carried: p.carried, capacity: this.capacity, invuln: Boolean(p.invuln), dash_cd_s: seconds(p.dashCd),
         pulse_cd_s: seconds(p.pulseCd), charm_s: seconds(p.charm) },
-      lanterns: this.lanterns.map(lamp => ({ ...lamp, pos: round(lamp.pos) })),
+      lanterns: this.lanterns.map(({ fuelUnits, ...lamp }) => ({ ...lamp, pos: round(lamp.pos), fuel: this.fuel({ fuelUnits }) })),
       shades: this.shades.map(shade => ({ id: shade.id, pos: round(shade.pos), state: shade.state })),
       motes_active: this.motes.length,
       motes: this.motes.map(mote => ({ id: mote.id, pos: round(mote.pos), kind: mote.kind,

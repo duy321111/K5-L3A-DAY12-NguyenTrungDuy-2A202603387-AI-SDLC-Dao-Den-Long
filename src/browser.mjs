@@ -126,8 +126,17 @@ for (const key of Object.keys(prefs)) {
   });
 }
 sounds.volume = prefs.volume / 100;
-const contrastToggle = { checked: false };
-const slots = Array.from({ length: tuning.carry_capacity }, () => {
+const contrastToggle = byId('accessible-colors');
+try { contrastToggle.checked = localStorage.getItem('lantern-accessible-colors') === 'true'; } catch {}
+function applyContrast() {
+  stage.toggleAttribute('data-accessible', contrastToggle.checked);
+}
+applyContrast();
+contrastToggle.addEventListener('change', () => {
+  applyContrast();
+  try { localStorage.setItem('lantern-accessible-colors', String(contrastToggle.checked)); } catch {}
+});
+const slots = Array.from({ length: tuning.capacity_max }, () => {
   const slot = document.createElement('i');
   byId('mote-slots').append(slot);
   return slot;
@@ -302,7 +311,7 @@ function backToMenu() {
   sounds.pause();
   pauseMenu.hidden = navigation.hidden = mapPanel.hidden = true;
   byId('chapter').textContent = 'Đêm 1 (Đảo Bến)';
-  showCover('Đảo Đèn Lồng', 'Thắp đủ đèn trong mỗi đêm để đi tiếp.', 'Bắt đầu', 'intro');
+  showCover('Đảo Đèn Lồng', 'Thắp đèn và giữ đảo sáng tới bình minh qua ba đêm.', 'Bắt đầu', 'intro');
 }
 
 play.disabled = false;
@@ -473,6 +482,8 @@ function updateHud() {
     slot.toggleAttribute('data-full', index < game.player.carried);
   }
   byId('clock').toggleAttribute('data-urgent', active && seconds <= 30);
+  const goal = 'Giữ ' + Math.ceil(tuning.win_ratio * game.lanterns.length) + ' đèn sáng tới bình minh';
+  if (byId('dawn-goal').textContent !== goal) byId('dawn-goal').textContent = goal;
   const status = value => value ? (value / HZ).toFixed(1) + ' s' : 'Sẵn sàng';
   byId('dash-status').textContent = '⇥ Lướt ' + status(game.player.dashCd);
   byId('pulse-status').textContent = '✦ Tỏa sáng ' + status(game.player.pulseCd);
@@ -485,9 +496,14 @@ function updateHud() {
   if (!lanternPrompt.hidden) {
     const carried = game.player.carried;
     lanternPrompt.toggleAttribute('data-ready', carried > 0);
-
-    lanternAction.textContent = 'E — Nạp ánh sáng (' + nearby.deposited + '/' + tuning.lantern_cost + ')';
-    lanternProgress.textContent = carried ? 'Chuột trái cũng có thể nạp đèn ' + nearby.id : 'Cần đom đóm';
+    const warning = game.isWeak(nearby);
+    lanternPrompt.toggleAttribute('data-warning', warning);
+    const symbol = warning && contrastToggle.checked ? '⚠ ' : '';
+    const key = keyLabel(bindings.interact);
+    lanternAction.textContent = nearby.lit ? symbol + key + ' — Châm dầu ' + nearby.id
+      : key + ' — Nạp ánh sáng (' + nearby.deposited + '/' + game.cost(nearby) + ')';
+    lanternProgress.textContent = nearby.lit ? 'Dầu ' + game.fuel(nearby).toFixed(1) + ' / ' + tuning.fuel_max
+      : carried ? 'Chuột trái cũng có thể nạp đèn ' + nearby.id : 'Cần đom đóm';
   }
   const message = game.tick < effectUntil ? effect : '';
   if (byId('message').textContent !== message) byId('message').textContent = message;
@@ -1098,6 +1114,13 @@ function draw() {
       ctx.textAlign = 'center';
       ctx.fillStyle = '#ffedce';
       ctx.fillText(item.lit ? item.id : item.id + '  ' + item.deposited + '/' + game.cost(item), 0, -3.15);
+      if (item.lit) {
+        ctx.fillStyle = '#231b21';
+        ctx.fillRect(-0.6, -3.55, 1.2, 0.13);
+        ctx.fillStyle = lowFuel ? contrastToggle.checked ? '#ffffff' : '#ff5a5f' : '#ffd383';
+        ctx.globalAlpha = dim ? 0.3 : 1;
+        ctx.fillRect(-0.6, -3.55, 1.2 * item.fuelUnits / (tuning.fuel_max * HZ), 0.13);
+      }
     } else if (item.kind === 'shade') {
       glow(0, 0, 1.4, '#41185fa6');
       const accent = contrastToggle.checked ? '#00B3FF' : palette.shadeRim;

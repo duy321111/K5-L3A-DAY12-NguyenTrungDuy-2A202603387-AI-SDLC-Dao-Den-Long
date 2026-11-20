@@ -1,6 +1,6 @@
 # Đảo Đèn Lồng
 
-**Phase 2.** Điều khiển Mây qua Đảo Bến, Cầu Tre và Đảo Tháp Chuông. Gom đom đóm và thắp hết đèn trước bình minh để qua từng Đêm.
+**Phase 3.** Điều khiển Mây qua Đảo Bến, Cầu Tre và Đảo Tháp Chuông. Đèn hao dầu và có thể tắt trong đêm. Đến bình minh, Mây phải còn Ngọn Lửa và giữ sáng ít nhất 3/5, 4/6 hoặc 5/7 đèn tương ứng.
 
 
 ## Chạy game
@@ -30,7 +30,9 @@ Bản web ưu tiên Three.js/WebGL 2 để dựng địa hình, nhân vật, nư
 | E | Nạp đom đóm vào đèn gần nhất, cần 5 con cho mỗi đèn |
 | Q | Tỏa sáng, tốn 2 đom đóm và làm choáng Bóng Mực gần Mây |
 
-Mỗi đèn cần 10 đom đóm. Thắp đủ đèn sẽ thắng Đêm đang chơi.
+Thắp lần đầu cần **10 đom đóm**, thắp lại cần **5**. Bấm E hoặc chuột trái khi đứng gần đèn sáng để châm dầu. Dưới 30 dầu, đèn mất vùng an toàn và có thể bị Bóng Mực hút dầu. Mỗi lần thắp thành công tăng sức chứa thêm 2, tối đa 20.
+
+Nạp hoặc châm dầu cho 5 điểm mỗi đom đóm. Thắp lần đầu được 100, thắp lại được 40. Tỏa Sáng trúng Bóng Mực được 5 điểm, hoặc 15 nếu con đó đang hút dầu. Khi thắng, mỗi đèn còn sáng cho 50 điểm cộng phần nguyên của dầu còn lại, và mỗi Ngọn Lửa cho 50 điểm.
 
 ## Kiểm thử
 
@@ -39,7 +41,7 @@ npm test
 node headless.mjs --seed 42 --night 3 --ticks 120 --out output.jsonl
 ```
 
-Headless v1.1 nhận `--night 1`, `2` hoặc `3`, hỗ trợ `--scenario <file.json>`, `--inputs <file.json>` và `--snapshot-every <int>` (mặc định 10). Xem [ghi chép Phase 2](docs/phase-2.md) và [changelog](CHANGELOG.md).
+Headless v1.2 nhận `--night 1`, `2` hoặc `3`, hỗ trợ `--scenario <file.json>`, `--inputs <file.json>` và `--snapshot-every <int>` (mặc định 10). Xem [quyết định Phase 3](docs/adr-phase-3.md) và [changelog](CHANGELOG.md).
 
 ## Sáng tạo của tôi
 
