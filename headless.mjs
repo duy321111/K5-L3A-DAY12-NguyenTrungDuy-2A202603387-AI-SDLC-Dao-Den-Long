@@ -1,5 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { Game, defaultInput } from './src/game.mjs';
+import { defaultInput } from './src/game.mjs';
+import { NightGame, shadeStates, drifterStates } from './src/night-game.mjs';
+import { nights } from './src/nights.mjs';
 
 const contract = JSON.parse(readFileSync(new URL('./game.contract.json', import.meta.url), 'utf8'));
 const flags = new Set(['seed', 'night', 'scenario', 'inputs', 'ticks', 'out', 'snapshot-every']);
@@ -20,25 +22,42 @@ function inputsValid(inputs) {
     return optional(frame.move, move => Array.isArray(move) && move.length === 2
       && move.every(value => Number.isFinite(value) && Math.abs(value) <= 1))
       && optional(frame.cam_yaw_deg, Number.isFinite)
-      && ['jump', 'interact', 'pulse', 'dash'].every(key => optional(frame[key], boolean));
+      && ['jump', 'interact', 'pulse', 'dash', 'pause'].every(key => optional(frame[key], boolean));
   });
 }
 
-function scenarioValid(scenario) {
+function scenarioValid(scenario, night) {
   const t = contract.tuning;
+  const lanternId = id => typeof id === 'string' && /^L[1-7]$/.test(id)
+    && Number(id.slice(1)) <= nights[night].lanterns.length;
   return object(scenario)
     && optional(scenario.player, player => object(player) && optional(player.pos, position)
+
       && optional(player.carried, value => integer(value) && value <= t.carry_capacity)
-      && optional(player.flames, integer))
+      && optional(player.flames, integer)
+      && ['invuln_ticks', 'dash_cd_ticks', 'pulse_cd_ticks', 'charm_ticks'].every(key => optional(player[key], integer)))
     && optional(scenario.time_left_s, time => Number.isFinite(time) && time >= 0)
-    && optional(scenario.random_motes, boolean) && optional(scenario.random_shades, boolean)
-    && optional(scenario.motes, motes => arrayOf(motes, position))
+    && ['random_motes', 'random_shades', 'random_drifters', 'wind_enabled'].every(key => optional(scenario[key], boolean))
+    && optional(scenario.motes, motes => arrayOf(motes, mote => position(mote)
+      || object(mote) && position(mote.pos) && optional(mote.kind, kind => ['random', 'dropped'].includes(kind))
+      && optional(mote.ttl_ticks, integer)))
     && optional(scenario.shades, shades => arrayOf(shades, shade => object(shade) && position(shade.pos)
-      && optional(shade.id, id => typeof id === 'string' && id.length > 0))
+      && optional(shade.id, id => typeof id === 'string' && id.length > 0)
+      && optional(shade.state, state => shadeStates.includes(state))
+      && optional(shade.state_ticks_left, integer))
       && new Set(shades.filter(shade => shade.id !== undefined).map(shade => shade.id)).size
         === shades.filter(shade => shade.id !== undefined).length)
+    && optional(scenario.drifters, drifters => arrayOf(drifters, item => object(item) && position(item.pos)
+      && optional(item.id, id => typeof id === 'string' && id.length > 0)
+      && optional(item.state, state => drifterStates.includes(state))
+      && optional(item.stolen, integer) && optional(item.state_ticks_left, integer)))
+    && optional(scenario.charms, charms => arrayOf(charms, item => object(item)
+      && optional(item.pos, position) && optional(item.available, boolean)
+      && optional(item.id, id => typeof id === 'string' && id.length > 0)
+      && optional(item.respawn_ticks, integer)))
     && optional(scenario.lanterns, lanterns => arrayOf(lanterns, lantern => object(lantern)
-      && /^L[1-5]$/.test(lantern.id) && optional(lantern.pos, position)
+      && lanternId(lantern.id)
+      && optional(lantern.pos, position)
       && optional(lantern.lit, boolean)
       && optional(lantern.deposited, value => integer(value) && value <= t.lantern_cost))
       && new Set(lanterns.map(lantern => lantern.id)).size === lanterns.length);
@@ -68,18 +87,19 @@ try {
   const seed = Number(args.seed);
   const ticks = Number(args.ticks);
   const every = Number(args['snapshot-every'] ?? 10);
-  if (args.night !== '1' || !args.out || !Number.isSafeInteger(seed) || !integer(ticks) || !integer(every) || every === 0) {
-    throw new Error('Cần --seed <int> --night 1 --ticks <int> --out <file.jsonl>');
+  const night = Number(args.night);
+  if (!['1', '2', '3'].includes(args.night) || !args.out || !Number.isSafeInteger(seed) || !integer(ticks) || !integer(every) || every === 0) {
+    throw new Error('Cần --seed <int> --night <1|2|3> --ticks <int> --out <file.jsonl>');
   }
-  const scenario = args.scenario ? readInput(args.scenario, scenarioValid) : {};
+  const scenario = args.scenario ? readInput(args.scenario, value => scenarioValid(value, night)) : {};
   const frames = args.inputs ? readInput(args.inputs, inputsValid).frames : [];
-  const game = new Game(contract.tuning, seed, scenario);
+  const game = new NightGame(contract.tuning, seed, night, scenario);
   const lines = [];
   const append = value => lines.push(JSON.stringify(value));
   let input = defaultInput;
   let frame = 0;
   append(game.snapshot());
-  while (game.tick < ticks && game.state === 'playing') {
+  while (game.tick < ticks && ['playing', 'paused'].includes(game.state)) {
     if (frames[frame]?.tick === game.tick) {
       const { tick, ...changes } = frames[frame++];
       input = { ...input, ...changes };

@@ -1,40 +1,49 @@
 # Đảo Đèn Lồng
 
-**Phase 1 · Đêm 1 — Đảo Bến.** Điều khiển Mây gom đom đóm và thắp năm ngọn đèn trước bình minh. Đèn sáng tạo vùng an toàn. Nếu hết ba lửa hoặc hết giờ, bạn thua.
+**Phase 2.** Điều khiển Mây qua Đảo Bến, Cầu Tre và Đảo Tháp Chuông. Gom đom đóm và thắp hết đèn trước bình minh để qua từng Đêm.
+
 
 ## Chạy game
 
-Cần Node.js 20 trở lên. Mở terminal trong thư mục repo và chạy:
+Cần Node.js 20 trở lên và Chrome, Edge hoặc Chromium. WebGL 2 dùng cho đồ họa 3D. Mở terminal trong thư mục repo và chạy:
 
 ```sh
-npm install
+npm ci
 npm start
 ```
 
 Mở http://127.0.0.1:8080 và bấm **Bắt đầu**. Bản web dùng cùng mã mô phỏng với headless và chạy trên Windows, macOS và Linux.
 
+Bản web ưu tiên Three.js/WebGL 2 để dựng địa hình, nhân vật, nước và bóng đổ 3D. Trình duyệt thiếu WebGL 2 dùng trình vẽ Canvas dự phòng.
+
 | Phím | Hành động |
 |---|---|
+| Rê chuột trong màn chơi | Xoay camera quanh Mây |
+| Bấm chuột trái trong màn chơi | Nạp đom đóm vào đèn gần nhất và thắp đèn khi đủ |
+| Esc hoặc P | Tạm dừng và mở menu |
+| M | Mở hoặc đóng bản đồ lớn trong lúc chơi |
+| F | Bật hoặc tắt toàn màn hình |
 | W, A, S, D | Di chuyển theo camera |
+| Shift | Lướt theo hướng di chuyển. Khi đứng yên, lướt theo hướng camera |
 | ←, → | Xoay camera |
 | Space | Nhảy |
 | E | Nạp đom đóm vào đèn gần nhất, cần 5 con cho mỗi đèn |
 | Q | Tỏa sáng, tốn 2 đom đóm và làm choáng Bóng Mực gần Mây |
 
-Mỗi đom đóm cho 10 điểm, mỗi đèn thắp được cho 100 điểm, mỗi Bóng Mực bị làm choáng cho 20 điểm. Khi thắng, cộng 2 điểm mỗi giây trọn còn lại và 50 điểm mỗi lửa còn lại. Rìa đảo chặn di chuyển, nên không có phạt rơi. Bị chạm mất lửa và không làm rơi đom đóm.
+Mỗi đèn cần 10 đom đóm. Thắp đủ đèn sẽ thắng Đêm đang chơi.
 
 ## Kiểm thử
 
 ```sh
 npm test
-node headless.mjs --seed 42 --night 1 --ticks 120 --out output.jsonl
+node headless.mjs --seed 42 --night 3 --ticks 120 --out output.jsonl
 ```
 
-Headless hỗ trợ `--scenario <file.json>`, `--inputs <file.json>` và `--snapshot-every <int>` (mặc định 10). Thông số nằm trong [game.contract.json](game.contract.json). Xem [giả định và bằng chứng Phase 1](docs/phase-1.md).
+Headless v1.1 nhận `--night 1`, `2` hoặc `3`, hỗ trợ `--scenario <file.json>`, `--inputs <file.json>` và `--snapshot-every <int>` (mặc định 10). Xem [ghi chép Phase 2](docs/phase-2.md) và [changelog](CHANGELOG.md).
 
 ## Sáng tạo của tôi
 
-Đom đóm lơ lửng và mỗi đèn đã thắp nhuộm ấm vùng đất xung quanh. Các hiệu ứng được vẽ trong giao diện. Test CLI kiểm tra tọa độ đom đóm trên mặt đất và kiểm tra hai lần chạy trùng từng byte với cùng seed.
+Mặt biển có sóng, phản chiếu ánh trăng và bọt ở chân vách đá. Bụi cỏ, đá và bầu trời sao trang trí cả ba đêm. Đá ở bản web chặn Mây khi đi bộ hoặc lướt. Bản đồ lớn mở bằng M trong khi trận vẫn tiếp tục. Lá hồi sức hồi 1 Ngọn Lửa và Túi ánh sáng bổ sung tối đa 3 đom đóm ở bản web Đêm 1. Các vật phẩm và đá trang trí tách khỏi mô phỏng headless.
 
 ---
 

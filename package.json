@@ -4,6 +4,10 @@
   "private": true,
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test"
+    "test": "node --test tests/contract.test.mjs",
+    "verify:phase2": "npm test && node scripts/phase2-benchmark.mjs"
+  },
+  "dependencies": {
+    "three": "0.187.0"
   }
 }

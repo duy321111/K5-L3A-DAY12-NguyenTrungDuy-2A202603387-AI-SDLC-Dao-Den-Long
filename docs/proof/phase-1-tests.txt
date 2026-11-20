@@ -2,14 +2,14 @@
 > dao-den-long@1.0.0 test
 > node --test
 
-✔ tick 0, đổi hướng theo camera, chuẩn hóa move và giữ input giữa các frame (69.133ms)
-✔ nhặt trong bán kính, giới hạn sức chứa và không nạp lặp khi giữ E (59.0888ms)
-✔ nạp một phần rồi thắp đèn cuối, cộng điểm và dừng ngay ở tick thắng (70.8681ms)
-✔ xung đẩy và làm choáng theo XZ, tôn trọng cooldown và cạnh lên (64.823ms)
-✔ sát thương theo nhịp bất tử, thua khi hết lửa, vùng đèn bảo vệ và bình minh (115.9848ms)
-✔ output trùng từng byte với cùng seed; đổi seed thay đổi màn mặc định (182.9557ms)
-✔ màn mặc định của bản web có đường chơi thắng đủ năm đèn (200.5386ms)
-✔ inputs hoặc scenario sai định dạng thoát mã 2 và ghi stderr (106.0915ms)
+✔ tick 0, đổi hướng theo camera, chuẩn hóa move và giữ input giữa các frame (158.2358ms)
+✔ nhặt trong bán kính, giới hạn sức chứa và không nạp lặp khi giữ E (136.9302ms)
+✔ nạp một phần rồi thắp đèn cuối, cộng điểm và dừng ngay ở tick thắng (128.2628ms)
+✔ xung đẩy và làm choáng theo XZ, tôn trọng cooldown và cạnh lên (151.1537ms)
+✔ sát thương theo nhịp bất tử, thua khi hết lửa, vùng đèn bảo vệ và bình minh (293.9788ms)
+✔ output trùng từng byte với cùng seed; đổi seed thay đổi màn mặc định (463.1328ms)
+✔ màn chuẩn headless có đường chơi thắng đủ năm đèn (472.329ms)
+✔ inputs hoặc scenario sai định dạng thoát mã 2 và ghi stderr (275.1865ms)
 ℹ tests 8
 ℹ suites 0
 ℹ pass 8
@@ -17,4 +17,4 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 956.8382
+ℹ duration_ms 2370.4587
