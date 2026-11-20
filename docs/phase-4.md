@@ -6,7 +6,7 @@
 | Soak | Mười Đêm trong một tiến trình, 0 crash. RSS 32,62 → 35,96 MB, bằng khoảng 110,24% mức đầu. Xem [soak.json](../soak.json). |
 | Headless và hồi quy | 29/29 test local đạt, gồm bài xuất bảng điểm qua tiến trình mới. Xem [log test](proof/phase-4-tests.txt). Test ẩn của giảng viên chưa được cung cấp. |
 | Giao diện | Chrome kiểm tra chữ 18/22,5 px, chặn trùng phím, lưu đổi phím, khôi phục mặc định, lưu điểm và xem lại sau tải lại. Trạng thái thua để kiểm tra form được dựng trong phiên test. Xem [log trình duyệt](proof/phase-4-browser.txt) và [ảnh game](proof/gameplay.png). |
-| Demo | [MP4](demo/demo.mp4) dùng khung hình từ toàn bộ trang game trong Chrome, gồm cả HUD gốc. Phần số liệu kiểm thử xuất hiện sau đoạn chơi. Clip 1280×720 dài khoảng 13,09 giây. |
+| Demo | [MP4](demo/demo.mp4) do người làm bài quay, dài 3 phút 19,67 giây. |
 | Đóng gói | Gói zip local chứa thư mục game, Node server, mã headless và thư viện Three.js đã chép sẵn. Chạy `node server.mjs` trong thư mục đã giải nén. Gói thư mục được mở trong Chrome từ đường dẫn riêng. |
 | Bàn giao GitHub | Tệp nguồn, báo cáo, demo và gói đã chuẩn bị ở local. Tag local `phase-4` và `v1.0.0` cập nhật theo bản này. Chưa kiểm tra quyền xem công khai, push hay phát hành Release. |
 
