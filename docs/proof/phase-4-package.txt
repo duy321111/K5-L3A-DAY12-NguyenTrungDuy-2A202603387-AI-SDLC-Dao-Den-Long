@@ -1,0 +1,4 @@
+﻿HTTP ready
+Chrome/157.0.8103.80
+{"seconds":14.482667,"width":1280,"height":720,"gameColors":2275}
+Packaged game served successfully; MP4 decodes with nonblank gameplay.

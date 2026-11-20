@@ -5,3 +5,4 @@
 - Khi đổi luật, ghi tiêu chí và giả định trong `docs/phase-2.md`. Chạy `npm run verify:phase2` để kiểm tra tự động và đo một lượt 21.600 tick.
 - Chạy `npm test` trước khi kết thúc. Nếu test đỏ, sửa hoặc ghi rõ mục chưa đạt. Chạy `npm start` để kiểm tra luồng giao diện khi sửa HUD, input hoặc camera.
 - Bằng chứng phải lấy từ chương trình thật và khớp commit bàn giao. Ghi lý do khi một ticket mới thay thế test cũ.
+- Phase 4 dùng đúng lệnh `bench_cmd` và `soak_cmd` trong contract. Benchmark cần cảnh chuẩn và log GPU. Chỉ commit, gắn tag hoặc phát hành khi người dùng yêu cầu.

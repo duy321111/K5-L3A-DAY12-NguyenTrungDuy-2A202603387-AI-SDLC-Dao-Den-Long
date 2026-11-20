@@ -1,0 +1,41 @@
+﻿
+> dao-den-long@1.0.0 test
+> node --test tests/contract.test.mjs tests/leaderboard.test.mjs
+
+✔ tick 0, đổi hướng theo camera, chuẩn hóa move và giữ input giữa các frame (116.5266ms)
+✔ nhặt trong bán kính, giới hạn sức chứa và không nạp lặp khi giữ E (104.6879ms)
+✔ thắp đèn đúng tick bình minh được tính vào số đèn sáng và điểm (105.9551ms)
+✔ Tỏa Sáng đo 3D, đẩy 4 m trong 15 tick và chặn xung thứ hai khi hồi chiêu (102.3933ms)
+✔ sát thương theo nhịp bất tử, thua khi hết lửa, vùng đèn bảo vệ và bình minh (168.9841ms)
+✔ output trùng từng byte với cùng seed; đổi seed thay đổi màn mặc định (234.2924ms)
+✔ thắp đủ đèn vẫn tiếp tục; bình minh chỉ thắng khi đạt đúng ngưỡng từng Đêm (518.5094ms)
+✔ nhiên liệu giảm đúng tick, tắt đèn, thắp lại 5 đom đóm và tăng túi (83.4181ms)
+✔ châm dầu dùng ceil, nhắm đèn gần nhất rồi theo id và không chọn đèn đầy (93.2813ms)
+✔ tạm dừng giữ dầu; Bóng Mực cộng dồn hút dầu và ghi sự kiện sau 60 tick (102.0662ms)
+✔ chỉ wander nhắm đèn yếu, ưu tiên id; châm qua ngưỡng đẩy Bóng Mực ra 6 m (199.7487ms)
+✔ Tỏa Sáng cho 15 điểm khi trúng drain, 5 điểm khi trúng choáng và hết choáng về wander (103.2295ms)
+✔ bình minh tính đèn đã hết dầu và ưu tiên thua hết Ngọn Lửa (156.3079ms)
+✔ vùng an toàn còn ở đúng 30 dầu, mất khi dầu thấp hơn (219.1607ms)
+✔ pause giữ sim_tick, thời gian, TTL và hồi chiêu qua nhiều tick (87.1963ms)
+✔ Lướt 12 tick có hướng và hồi chiêu; Bùa Gió cho lướt lại (171.3761ms)
+✔ Đêm 2 qua cầu và bục phóng; rơi mất Ngọn Lửa và ánh sáng (309.9233ms)
+✔ Đêm 3 có dốc lên tầng 1, bục phóng lên tầng 2 và gió đúng lịch (366.1846ms)
+✔ Gió Lạc cướp trước Bóng Mực, rơi lại đồ khi trúng Tỏa Sáng (162.2619ms)
+✔ nhảy 7 m/s, lướt trên không giữ cao độ, đứng yên dùng hướng Mây đã quay (91.7987ms)
+✔ 20 đom đóm lúc đầu, sinh thêm đúng tick 240 và nhặt theo chênh cao (148.4141ms)
+✔ bị đánh rơi nửa túi trong vành 1,5–2,5 m và hết hạn đúng 480 tick (79.3234ms)
+✔ rơi dưới -10 bỏ qua bất tử, không nhặt khi chờ, hồi sinh sau 60 tick (68.3702ms)
+✔ Bóng Mực sinh đúng mốc đầu tiên và Gió Lạc tự sinh tại tick 1200 (179.8427ms)
+✔ Bùa hết hiệu lực sau 600 tick và xuất hiện lại sau 2700 tick (123.4638ms)
+✔ Đêm 3 không leo được vách tầng; bước khỏi vành khăn thì đáp ở tầng 0 (225.3593ms)
+✔ đá trang trí chặn đi bộ và lướt; Mây vẫn đi vòng được (2.0118ms)
+✔ inputs hoặc scenario sai định dạng thoát mã 2 và ghi stderr (130.2053ms)
+✔ bảng điểm lưu top 10, ổn định khi bằng điểm và xuất được sau khi mở lại (331.5118ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4598.5619

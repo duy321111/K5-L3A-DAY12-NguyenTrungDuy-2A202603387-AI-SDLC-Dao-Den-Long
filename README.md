@@ -1,7 +1,10 @@
 # Đảo Đèn Lồng
 
-**Phase 3.** Điều khiển Mây qua Đảo Bến, Cầu Tre và Đảo Tháp Chuông. Đèn hao dầu và có thể tắt trong đêm. Đến bình minh, Mây phải còn Ngọn Lửa và giữ sáng ít nhất 3/5, 4/6 hoặc 5/7 đèn tương ứng.
+[Video demo MP4](docs/demo/demo.mp4)
 
+**v1.0.0.** Điều khiển Mây qua Đảo Bến, Cầu Tre và Đảo Tháp Chuông. Đèn hao dầu và có thể tắt trong đêm. Đến bình minh, Mây phải còn Ngọn Lửa và giữ sáng ít nhất 3/5, 4/6 hoặc 5/7 đèn tương ứng.
+
+![Mây đứng trên đồi ở Đảo Bến, với đèn lồng, sóng biển và HUD](docs/proof/gameplay.png)
 
 ## Chạy game
 
@@ -41,7 +44,21 @@ npm test
 node headless.mjs --seed 42 --night 3 --ticks 120 --out output.jsonl
 ```
 
-Headless v1.2 nhận `--night 1`, `2` hoặc `3`, hỗ trợ `--scenario <file.json>`, `--inputs <file.json>` và `--snapshot-every <int>` (mặc định 10). Xem [quyết định Phase 3](docs/adr-phase-3.md) và [changelog](CHANGELOG.md).
+Headless v1.3 nhận `--night 1`, `2` hoặc `3`, hỗ trợ `--scenario <file.json>`, `--inputs <file.json>` và `--snapshot-every <int>` (mặc định 10). Xem [quyết định Phase 3](docs/adr-phase-3.md) và [changelog](CHANGELOG.md).
+
+## Benchmark, soak và bảng điểm
+
+```sh
+node scripts/bench.mjs --seed 42 --duration 30 --out bench.json
+node --expose-gc --jitless --max-semi-space-size=1 scripts/soak.mjs --seed 7 --nights 10 --out soak.json
+npm start -- --export-leaderboard out.json
+```
+
+Benchmark mở Chrome/Chromium ở 1280×720. Đặt biến môi trường `BENCH_CHROME` nếu trình chạy không tìm đúng trình duyệt. Dùng `requestAnimationFrame` theo nhịp vẽ của trình duyệt nên `vsync_off` là `false`. Trình duyệt không cung cấp RSS đỉnh của cảnh qua API web, nên `peak_mem_mb` là `null`. Báo cáo local ở [bench.json](bench.json) và [soak.json](soak.json). Bộ đo soak lấy RSS sau GC ở hai mốc và dùng cùng một tiến trình Node trong cả mười Đêm.
+
+Bảng điểm lưu tại `.local/leaderboard.json` trong thư mục chạy game. Sau khi thua hoặc thắng Đêm 3, nhập tên 3–12 ký tự chữ Latin, số hoặc dấu gạch dưới. Mở **Bảng xếp hạng** từ menu chính. **Esc/P → Cài đặt** có đổi phím, bảng màu dễ phân biệt, giảm chuyển động và tăng cỡ chữ.
+
+Đóng gói bằng `npm run pack:release`. Thư mục `dist/dao-den-long-v1.0.0` đã có thư viện trình duyệt. Chạy `node server.mjs` bên trong gói. Xem [bằng chứng Phase 4](docs/phase-4.md) và [retro](docs/retro.md).
 
 ## Sáng tạo của tôi
 

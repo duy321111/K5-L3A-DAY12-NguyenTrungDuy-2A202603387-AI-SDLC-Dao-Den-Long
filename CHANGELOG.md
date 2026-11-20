@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 4 — Bình minh, v1.0.0
+
+- Contract v1.3 thêm lệnh benchmark cửa sổ và soak headless trong một tiến trình.
+- Bảng xếp hạng top 10 lưu trên đĩa và có lệnh xuất JSON.
+- Thêm đổi phím, phụ đề gameplay, mũi tên báo Bóng Mực, giảm chuyển động và chữ lớn.
+- Thêm gói chạy độc lập với trình cài npm, video, số đo và retro.
+
 ## Phase 3 — Đèn cạn dầu
 
 ### Thay đổi không tương thích

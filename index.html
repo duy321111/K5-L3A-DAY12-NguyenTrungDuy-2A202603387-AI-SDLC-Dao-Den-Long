@@ -28,6 +28,8 @@
       <div id="inventory" hidden><span id="carried">0 / 10</span><div id="mote-slots" aria-hidden="true"></div></div>
       <div id="cooldowns" hidden><span id="dash-status"></span><span id="pulse-status"></span></div>
       <div id="lamp-arrow" hidden aria-hidden="true"></div>
+      <div id="shade-arrow" hidden aria-hidden="true">▲</div>
+      <div id="subtitles" role="status" aria-live="polite" hidden></div>
       <div id="message" role="status"></div>
       <div id="lantern-prompt" hidden>
         <strong id="lantern-action"></strong>
@@ -46,8 +48,20 @@
         <h2 id="cover-title">Thắp sáng Đảo Bến</h2>
         <p id="cover-copy">Gom đom đóm, châm dầu và giữ đủ đèn sáng tới bình minh.</p>
         <button id="play" type="button" disabled>Bắt đầu</button>
+        <button id="leaderboard-open" type="button">Bảng xếp hạng</button>
+        <form id="save-score" hidden>
+          <label>Tên <input id="score-name" minlength="3" maxlength="12" pattern="[A-Za-z0-9_]{3,12}" required autocomplete="nickname"></label>
+          <button type="submit">Lưu điểm</button>
+          <output id="save-status" role="status"></output>
+        </form>
         <noscript>Bật JavaScript để chơi.</noscript>
       </div>
+      <section id="leaderboard" aria-labelledby="leaderboard-title" hidden>
+        <h2 id="leaderboard-title">Bảng xếp hạng</h2>
+        <p id="leaderboard-status" role="status"></p>
+        <ol id="leaderboard-rows"></ol>
+        <button id="leaderboard-close" type="button">Về menu</button>
+      </section>
       <section id="pause-menu" aria-labelledby="pause-title" hidden>
         <h2 id="pause-title">Tạm dừng</h2>
         <div class="pause-actions">
@@ -60,6 +74,14 @@
           <label>Âm lượng <input id="volume" type="range" min="0" max="100"></label>
           <label>Độ nhạy chuột <input id="sensitivity" type="range" min="25" max="200"></label>
           <label>Bảng màu dễ phân biệt <input id="accessible-colors" type="checkbox"></label>
+          <label>Giảm chuyển động <input id="reduce-motion" type="checkbox"></label>
+          <label>Chữ lớn ×1,25 <input id="large-text" type="checkbox"></label>
+          <fieldset>
+            <legend>Đổi phím</legend>
+            <div id="key-bindings"></div>
+            <p id="key-status" role="status"></p>
+            <button id="reset-keys" type="button">Khôi phục mặc định</button>
+          </fieldset>
         </div>
       </section>
     </section>

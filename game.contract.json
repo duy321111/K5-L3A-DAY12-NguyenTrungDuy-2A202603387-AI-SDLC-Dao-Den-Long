@@ -1,9 +1,11 @@
 {
-  "contract_version": "1.2",
+  "contract_version": "1.3",
   "team": "2A202603387-nguyentrungduy",
   "build_cmd": "npm install",
   "run_cmd": "npm start",
   "headless_cmd": "node headless.mjs",
+  "bench_cmd": "node scripts/bench.mjs",
+  "soak_cmd": "node --expose-gc --jitless --max-semi-space-size=1 scripts/soak.mjs",
   "tuning": {
     "player_speed": 6,
     "carry_capacity": 10,
@@ -37,14 +39,7 @@
     "shade_speed": 4,
     "shade_hit_radius": 1,
     "fall_enabled": true,
-    "score": {
-      "per_mote": 5,
-      "per_lantern": 100,
-      "per_relight": 40,
-      "per_stun": 5,
-      "per_drain_stun": 15,
-      "per_lit_at_dawn": 50,
-      "per_flame_left": 50
-    }
+    "score": { "per_mote": 5, "per_lantern": 100, "per_relight": 40, "per_stun": 5,
+               "per_drain_stun": 15, "per_lit_at_dawn": 50, "per_flame_left": 50 }
   }
 }

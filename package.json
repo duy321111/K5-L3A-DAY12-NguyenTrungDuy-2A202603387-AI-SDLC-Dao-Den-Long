@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test tests/contract.test.mjs",
-    "verify:phase2": "npm test && node scripts/phase2-benchmark.mjs"
+    "test": "node --test tests/contract.test.mjs tests/leaderboard.test.mjs",
+    "verify:phase2": "npm test && node scripts/phase2-benchmark.mjs",
+    "pack:release": "node scripts/package-release.mjs"
   },
   "dependencies": {
     "three": "0.187.0"

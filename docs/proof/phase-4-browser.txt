@@ -1,0 +1,5 @@
+﻿HTTP ready
+Chrome/157.0.8103.80
+Recorder video/mp4;codecs=avc1.42001E
+Demo MP4 bytes 1907946
+Chrome: text 18 / 22.5 px, key conflicts and reset, score save and leaderboard after reload passed.

@@ -98,7 +98,8 @@ function placeItems() {
 }
 
 const keys = new Set();
-const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const systemMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const reducedMotion = { get matches() { return systemMotion.matches || byId('reduce-motion').checked; } };
 let game = createWorld();
 let items = placeItems();
 let active = false;
@@ -111,6 +112,9 @@ let effect = '';
 let effectUntil = 0;
 let hitUntil = 0;
 let lastCountdown = null;
+let latestShade;
+let shadeAlertUntil = 0;
+let windAlertUntil = 0;
 const prefs = { volume: 35, sensitivity: 100 };
 for (const key of Object.keys(prefs)) {
   const input = byId(key);
@@ -136,6 +140,16 @@ contrastToggle.addEventListener('change', () => {
   applyContrast();
   try { localStorage.setItem('lantern-accessible-colors', String(contrastToggle.checked)); } catch {}
 });
+for (const [id, attribute] of [['reduce-motion', 'data-reduced'], ['large-text', 'data-large-text']]) {
+  const choice = byId(id);
+  try { choice.checked = localStorage.getItem('lantern-' + id) === 'true'; } catch {}
+  const sync = () => {
+    (id === 'large-text' ? document.documentElement : stage).toggleAttribute(attribute, choice.checked);
+    try { localStorage.setItem('lantern-' + id, String(choice.checked)); } catch {}
+  };
+  sync();
+  choice.addEventListener('change', sync);
+}
 const slots = Array.from({ length: tuning.capacity_max }, () => {
   const slot = document.createElement('i');
   byId('mote-slots').append(slot);
@@ -222,10 +236,56 @@ async function toggleFullscreen() {
 fullscreen.addEventListener('click', toggleFullscreen);
 fullscreen.hidden = !document.fullscreenEnabled;
 
-
-const bindings = { forward:'KeyW', left:'KeyA', back:'KeyS', right:'KeyD', jump:'Space',
+const defaults = { forward:'KeyW', left:'KeyA', back:'KeyS', right:'KeyD', jump:'Space',
   dash:'ShiftLeft', interact:'KeyE', pulse:'KeyQ', pause:'KeyP' };
-const keyLabel = code => code.replace(/^(Key|Digit)/, '');
+const labels = { forward:'Tiến', left:'Sang trái', back:'Lùi', right:'Sang phải', jump:'Nhảy',
+  dash:'Lướt', interact:'Tương tác', pulse:'Tỏa sáng', pause:'Tạm dừng' };
+const reserved = new Set(['Escape','Tab','KeyM','KeyF','ArrowLeft','ArrowRight']);
+let bindings = { ...defaults };
+try {
+  const saved = JSON.parse(localStorage.getItem('lantern-bindings'));
+  if (saved && Object.keys(defaults).every(key => typeof saved[key] === 'string' && !reserved.has(saved[key]))
+    && new Set(Object.keys(defaults).map(key => saved[key])).size === Object.keys(defaults).length) {
+    bindings = Object.fromEntries(Object.keys(defaults).map(key => [key, saved[key]]));
+  }
+} catch {}
+const bindingButtons = {};
+const keyLabel = code => code.replace(/^(Key|Digit)/, '').replace(/^Shift(Left|Right)$/, 'Shift $1');
+function updateBindings() {
+  for (const [action, button] of Object.entries(bindingButtons)) button.textContent = keyLabel(bindings[action]);
+  for (const prompt of document.querySelectorAll('[data-binding]')) prompt.textContent = keyLabel(bindings[prompt.dataset.binding]);
+  try { localStorage.setItem('lantern-bindings', JSON.stringify(bindings)); } catch {}
+}
+for (const [action, label] of Object.entries(labels)) {
+  const row = document.createElement('label');
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.setAttribute('aria-label', 'Đổi phím ' + label);
+  row.append(label, button);
+  byId('key-bindings').append(row);
+  bindingButtons[action] = button;
+  button.addEventListener('focus', () => { byId('key-status').textContent = 'Nhấn phím mới cho ' + label + '.'; });
+  button.addEventListener('keydown', event => {
+    if (event.code === 'Tab') return;
+    event.preventDefault();
+    event.stopPropagation();
+    const duplicate = Object.keys(bindings).find(key => key !== action && bindings[key] === event.code);
+    if (reserved.has(event.code) || !event.code || duplicate) {
+      byId('key-status').textContent = duplicate ? 'Phím đã dùng cho ' + labels[duplicate] + '.' : 'Phím này đã dành cho hệ thống.';
+      return;
+    }
+    bindings[action] = event.code;
+    updateBindings();
+    byId('key-status').textContent = label + ' dùng phím ' + keyLabel(event.code) + '.';
+  });
+}
+byId('reset-keys').addEventListener('click', () => {
+  bindings = { ...defaults };
+  updateBindings();
+  byId('key-status').textContent = 'Đã khôi phục bộ phím mặc định.';
+});
+updateBindings();
+
 addEventListener('keydown', event => {
   if (active && !event.repeat && ['Escape', bindings.pause].includes(event.code) && !paused) {
     pauseGame();
@@ -262,6 +322,7 @@ canvas.addEventListener('mousemove', event => {
 });
 
 function restart() {
+  byId('leaderboard').hidden = true;
   game = createWorld();
   items = placeItems();
   yaw = 0;
@@ -271,6 +332,8 @@ function restart() {
   effectUntil = 0;
   hitUntil = 0;
   lastCountdown = null;
+  latestShade = undefined;
+  shadeAlertUntil = windAlertUntil = 0;
   queuedActions.clear();
   active = true;
   paused = false;
@@ -291,6 +354,8 @@ function showCover(title, copy, button, action) {
   byId('cover-copy').textContent = copy;
   play.textContent = button;
   cover.hidden = false;
+  byId('leaderboard-open').hidden = action !== 'intro';
+  byId('save-score').hidden = true;
   play.focus();
 }
 
@@ -333,8 +398,56 @@ function actionInput(action, key) {
   return queuedActions.delete(action);
 }
 
-
+const scoreboard = byId('leaderboard');
+const scoreForm = byId('save-score');
+const scoreStatus = byId('save-status');
 const campaignTotal = () => [...scoresByNight.values()].reduce((sum, score) => sum + score, 0);
+function offerScore() {
+  scoreForm.hidden = false;
+  scoreForm.reset();
+  scoreStatus.textContent = '';
+  scoreForm.querySelector('button').disabled = false;
+}
+byId('leaderboard-open').addEventListener('click', async () => {
+  cover.hidden = true;
+  scoreboard.hidden = false;
+  byId('leaderboard-close').focus();
+  const status = byId('leaderboard-status');
+  const rows = byId('leaderboard-rows');
+  rows.replaceChildren();
+  status.textContent = 'Đang tải…';
+  try {
+    const result = await fetch('/api/leaderboard');
+    if (!result.ok) throw new Error();
+    const { entries } = await result.json();
+    status.textContent = entries.length ? '' : 'Chưa có điểm nào.';
+    for (const entry of entries) {
+      const line = document.createElement('li');
+      line.textContent = entry.name + ' — ' + entry.score + ' điểm (' + entry.nights_won + '/3 đêm)';
+      rows.append(line);
+    }
+  } catch { status.textContent = 'Không đọc được bảng xếp hạng.'; }
+});
+byId('leaderboard-close').addEventListener('click', () => {
+  scoreboard.hidden = true;
+  cover.hidden = false;
+  byId('leaderboard-open').focus();
+});
+scoreForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = scoreForm.querySelector('button');
+  button.disabled = true;
+  try {
+    const response = await fetch('/api/leaderboard', { method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ name:byId('score-name').value, score:campaignTotal(),
+        nights_won:scoresByNight.size, seed:campaignSeed }) });
+    if (!response.ok) throw new Error();
+    scoreStatus.textContent = 'Đã ghi điểm.';
+  } catch {
+    scoreStatus.textContent = 'Chưa lưu được điểm. Hãy thử lại.';
+    button.disabled = false;
+  }
+});
 
 function collectItems() {
   items = items.filter(item => {
@@ -372,6 +485,10 @@ function simulate() {
       refuel: 'Đã châm dầu cho đèn ' + event.data.lantern_id,
     };
     sounds.effect(event.name);
+    if (event.name === 'shade_spawned') {
+      latestShade = game.shades.find(shade => shade.id === event.data.id);
+      shadeAlertUntil = game.tick + HZ * 3;
+    }
     if (messages[event.name]) {
       effect = messages[event.name];
       effectUntil = game.tick + HZ;
@@ -391,12 +508,14 @@ function simulate() {
         sounds.effect('won');
         if (night === 3) {
           showCover('Bình Minh', 'Tổng điểm ' + campaignTotal(), 'Về menu', 'menu');
+          offerScore();
         }
         else showCover(game.layout.name + ' bừng sáng', 'Điểm Đêm ' + night + ': ' + game.score, 'Đêm kế tiếp', 'next');
       } else {
         sounds.effect('lost');
         showCover('Đêm chưa qua', event.data.reason === 'dawn'
           ? 'Bình minh đã đến nhưng số đèn còn sáng chưa đủ.' : 'Mây đã hết Ngọn Lửa.', 'Chơi lại Đêm', 'play');
+        offerScore();
       }
     }
   }
@@ -408,6 +527,7 @@ function simulate() {
     sounds.effect('wind');
     effect = 'Lá bắt đầu bay. Gió mạnh sắp đến.';
     effectUntil = game.tick + 120;
+    windAlertUntil = game.tick + 120;
   }
 }
 
@@ -507,6 +627,31 @@ function updateHud() {
   }
   const message = game.tick < effectUntil ? effect : '';
   if (byId('message').textContent !== message) byId('message').textContent = message;
+  const captions = [];
+  if (latestShade && game.tick < shadeAlertUntil) captions.push('Bóng Mực xuất hiện');
+  if (game.tick < windAlertUntil) captions.push('Gió mạnh sắp thổi');
+  if (seconds <= 10) captions.push('Bình minh sau ' + seconds + ' giây');
+  const weak = game.lanterns.filter(lamp => game.isWeak(lamp)).map(lamp => lamp.id);
+  if (weak.length) captions.push((contrastToggle.checked ? '⚠ ' : '') + 'Đèn yếu: ' + weak.join(', '));
+  const subtitles = byId('subtitles');
+  subtitles.hidden = !active || paused || !captions.length;
+  const subtitleText = captions.join(' · ');
+  if (subtitles.textContent !== subtitleText) subtitles.textContent = subtitleText;
+  const shadeArrow = byId('shade-arrow');
+  shadeArrow.hidden = !active || paused || !latestShade || game.tick >= shadeAlertUntil;
+  if (!shadeArrow.hidden) {
+    const theta = yaw * Math.PI / 180;
+    const dx = latestShade.pos[0] - game.player.pos[0];
+    const dz = latestShade.pos[2] - game.player.pos[2];
+    const direction = Math.atan2((dx * Math.cos(theta) - dz * Math.sin(theta)) * cameraHorizontalSign(),
+      dx * Math.sin(theta) + dz * Math.cos(theta));
+    const sx = Math.sin(direction);
+    const sy = -Math.cos(direction);
+    const edge = Math.min(43 / Math.max(0.001, Math.abs(sx)), 30 / Math.max(0.001, Math.abs(sy)));
+    shadeArrow.style.left = (50 + sx * edge) + '%';
+    shadeArrow.style.top = (50 + sy * edge) + '%';
+    shadeArrow.style.rotate = direction + 'rad';
+  }
   if (active) {
     const nearest = items.reduce((best, item) => !best
       || distance(item.pos, game.player.pos) < distance(best.pos, game.player.pos) ? item : best, null);

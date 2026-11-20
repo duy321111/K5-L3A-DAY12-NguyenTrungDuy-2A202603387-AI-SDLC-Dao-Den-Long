@@ -93,3 +93,36 @@ kbd { color: var(--text); background: var(--panel); border: 1px solid var(--bord
 .pause-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 #settings-panel { display: grid; gap: 8px; }
 #settings-panel label { display: flex; justify-content: space-between; gap: 12px; }
+
+:root { --ui-scale: 1; --form-field: #252735; }
+:root[data-large-text] { --ui-scale: 1.25; }
+body, button, input, footer, #hud, #dawn-goal, #item-hint, #map-legend,
+#map-panel:not([hidden]) p, #lantern-progress, #inventory, #cooldowns, #subtitles {
+  font-size: calc(18px * var(--ui-scale));
+}
+h1, h2 { font-size: calc(clamp(28px, 4vw, 46px) * var(--ui-scale)); }
+#hud { gap: 8px; }
+#settings-panel { inline-size: min(480px, 92%); max-height: 50vh; overflow: auto; padding-inline: 4px; }
+#settings-panel fieldset { border: 1px solid var(--border); border-radius: 8px; min-width: 0; }
+#key-bindings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+#key-bindings label { align-items: center; }
+#key-bindings button { padding: 4px 8px; }
+#key-status { min-height: 2em; }
+#settings-panel input:focus-visible, #save-score input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+#leaderboard { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; padding: 16px; text-align: center; background: var(--shade); }
+#leaderboard[hidden], #save-score[hidden], #subtitles[hidden], #shade-arrow[hidden] { display: none; }
+#leaderboard-rows { max-height: 44vh; overflow: auto; text-align: left; }
+#leaderboard-rows li { padding-block: 2px; }
+#leaderboard-open { margin-top: 8px; }
+#save-score { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; }
+#score-name { color: var(--text); background: var(--form-field); border: 1px solid var(--border); border-radius: 6px; padding: 8px; width: 10em; }
+#subtitles { position: absolute; left: 16px; top: 84px; max-width: 68%; color: var(--text); background: var(--shade); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; pointer-events: none; }
+#shade-arrow { position: absolute; translate: -50% -50%; color: var(--warning); font-size: 26px; pointer-events: none; text-shadow: 0 2px 6px var(--night); }
+#stage[data-reduced] #clock[data-urgent] { animation: none; }
+#stage:has(#leaderboard:not([hidden])) { cursor: auto; }
+@media (max-width: 640px) {
+  #key-bindings { grid-template-columns: minmax(0, 1fr); }
+  #cooldowns { top: auto; bottom: 76px; }
+  #lantern-prompt { bottom: 144px; }
+  #message { bottom: 116px; }
+}
