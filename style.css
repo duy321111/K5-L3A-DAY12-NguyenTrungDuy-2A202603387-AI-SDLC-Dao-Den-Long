@@ -1,0 +1,37 @@
+/* Hallmark — atmospheric game screen, lanterns carry the visual identity. */
+/* Critique: center the playable world and keep controls legible around it. */
+:root {
+  --night: #141520;
+  --panel: #202130;
+  --shade: #131421e8;
+  --border: #414051;
+  --text: #fff1d7;
+  --muted: #c7b9ad;
+  --gold: #ffcd81;
+  --ink: #2e211c;
+  --display: Georgia, serif;
+  --body: system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { overflow-x: clip; }
+body { margin: 0; background: var(--night); color: var(--text); font-family: var(--body); }
+main { max-width: 1280px; margin: auto; padding: clamp(12px, 3vw, 32px); }
+header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+h1, h2 { font-family: var(--display); font-weight: 500; margin: 0; min-width: 0; overflow-wrap: break-word; text-wrap: balance; }
+h1 { font-size: clamp(28px, 4vw, 46px); }
+h2 { font-size: clamp(26px, 4vw, 50px); }
+p { color: var(--muted); margin: 8px 0 0; }
+button { background: var(--gold); color: var(--ink); border: 0; border-radius: 6px; padding: 12px 16px; font: 650 14px var(--body); cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+button:active { background: var(--text); }
+button:disabled { opacity: 0.55; cursor: default; }
+#stage { position: relative; isolation: isolate; min-height: 340px; height: min(65vh, 700px); background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: clip; }
+canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+#hud { position: absolute; inset: 12px 12px auto; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; padding: 8px 16px; background: var(--shade); border-radius: 6px; color: var(--muted); font-size: 14px; }
+#hud strong { padding-left: 4px; color: var(--gold); font-variant-numeric: tabular-nums; }
+#cover { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; text-align: center; padding: 20px; background: var(--shade); }
+#cover[hidden] { display: none; }
+#play { margin-top: 20px; }
+#message { position: absolute; bottom: 16px; width: 100%; text-align: center; color: var(--text); text-shadow: 0 1px 5px var(--night); pointer-events: none; }
+footer { display: flex; gap: 12px 24px; flex-wrap: wrap; margin-top: 16px; color: var(--muted); font-size: 14px; }
+kbd { color: var(--text); background: var(--panel); border: 1px solid var(--border); border-radius: 5px; padding: 4px 8px; }

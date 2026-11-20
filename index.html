@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Cùng Mây gom đom đóm và thắp sáng Đảo Bến trước bình minh.">
+  <title>Đảo Đèn Lồng</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div><h1>Đảo Đèn Lồng</h1><p>Đêm 1 (Đảo Bến)</p></div>
+      <button id="restart" type="button">Chơi lại</button>
+    </header>
+    <section id="stage" aria-label="Màn chơi Đảo Bến">
+      <canvas id="world" aria-label="Đảo Đèn Lồng, góc nhìn thứ ba"></canvas>
+      <div id="hud" aria-label="Trạng thái">
+        <span>Lửa <strong id="flames">3</strong></span>
+        <span>Đom đóm <strong id="carried">0 / 12</strong></span>
+        <span>Đèn <strong id="lit">0 / 5</strong></span>
+        <span>Thời gian <strong id="time">3:00</strong></span>
+        <span>Điểm <strong id="score">0</strong></span>
+      </div>
+      <div id="message" role="status"></div>
+      <div id="cover">
+        <h2 id="cover-title">Thắp sáng Đảo Bến</h2>
+        <p id="cover-copy">Gom đom đóm, thắp năm ngọn đèn trước bình minh và tránh Bóng Mực.</p>
+        <button id="play" type="button" disabled>Bắt đầu</button>
+        <noscript>Bật JavaScript để chơi.</noscript>
+      </div>
+    </section>
+    <footer aria-label="Điều khiển">
+      <span><kbd>W A S D</kbd> Di chuyển</span>
+      <span><kbd>← →</kbd> Xoay camera</span>
+      <span><kbd>Space</kbd> Nhảy</span>
+      <span><kbd>E</kbd> Nạp đèn</span>
+      <span><kbd>Q</kbd> Tỏa sáng</span>
+    </footer>
+  </main>
+  <script type="module" src="./src/browser.mjs"></script>
+</body>
+</html>
